@@ -1,9 +1,9 @@
-/* Author: Raines, Jared
- * Copyright: Copyright 2021, Festo Life Tech
- * Version: 0.01
+/* Author:     Raines, Jared
+ * Copyright:  Copyright 2021, Festo Life Tech
+ * Version:    0.0.1
  * Maintainer: Raines, Jared
- * Email: raines.jared@festo.com
- * Status: Development
+ * Email:      jared.raines@festo.com
+ * Status:     Development
  */
 using System;
 using System.Net;

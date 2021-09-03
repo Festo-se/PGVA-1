@@ -22,7 +22,7 @@
 * [GUI](https://www.festo.com/net/en-gb_gb/SupportPortal/Default.aspx?q=8146318&tab=4&s=t#result)
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/71296226/132046174-046be68a-e6ba-4783-a90b-28b182e50bf7.PNG">
+  <img src="https://user-images.githubusercontent.com/71296226/132046174-046be68a-e6ba-4783-a90b-28b182e50bf7.PNG" alt="alt text" width="500" height="500">
 </p>
 
 ## Driver Languages

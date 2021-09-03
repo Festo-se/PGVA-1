@@ -82,30 +82,46 @@ interface IPgvaDriver {
     void Aspirate(int actuationTime, int pressure);
     void Dispense(int actuationTime, int pressure);
     void Calibration();
+    void SetPumpPressure(int pressure, int vacuum);
+    int[] ReadSensorData();
 }
 
     class PgvaDriver : IPgvaDriver
     {
         private ModbusClient modbusClient;
+        private string intrface;
+        private string comPort;
+        private int tcpPort;
+        private string host;
+        private int baudrate;
+        private int slaveID;
 
         // DEFAULT: TCP/IP
-        public PgvaDriver(String config)
+        public PgvaDriver(string intrface, string comPort, int tcpPort, string host, int baudrate, int slaveID)
         {
+            this.intrface = intrface;
+            this.comPort = comPort;
+            this.tcpPort = tcpPort;
+            this.host = host;
+            this.baudrate = baudrate;
+            this.slaveID = slaveID;
+
             Console.WriteLine("Start");
             System.Net.ServicePointManager.SecurityProtocol = 
                 SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
             //serial communication in development
-            if (config.Equals("serial"))
+            if (intrface.Equals("serial"))
             {
-                modbusClient = new ModbusClient("Com3");
+                modbusClient = new ModbusClient(comPort);
             }
             else
             {
-                modbusClient = new ModbusClient("192.168.0.199", 8502);
+                modbusClient = new ModbusClient(host, tcpPort);
             }
-            modbusClient.Baudrate = 115200;
+            modbusClient.Baudrate = baudrate;
             modbusClient.ConnectionTimeout = 2000;
-            modbusClient.UnitIdentifier = 16;
+            modbusClient.UnitIdentifier = slaveID;
             
             try
             {
@@ -202,6 +218,7 @@ interface IPgvaDriver {
             Thread.Sleep(actuationTime);
         }
 
+        //for testing
         public void Mix()
         {
             int actuationTime = 150;
@@ -238,10 +255,17 @@ interface IPgvaDriver {
             WriteData((int)HoldingRegisters.MinCalibrSetP, -450);
         }
 
-        public void SetPumpPressure()
+        public void SetPumpPressure(int pressure, int vacuum)
         {
-            WriteData((int)HoldingRegisters.PressureThresholdmBar, 550);
-            WriteData((int)HoldingRegisters.VacuumThresholdmBar, -550);
+            if (pressure >= 0 && pressure <= 550) 
+            {
+                WriteData((int)HoldingRegisters.PressureThresholdmBar, pressure);
+            }
+            
+            if (vaccum >= -550 && vacuum <= 0) 
+            {
+                WriteData((int)HoldingRegisters.VacuumThresholdmBar, vaccum);
+            }
         }
 
         public int[] ReadSensorData()
@@ -258,7 +282,7 @@ interface IPgvaDriver {
     {
         static void Main(string[] args)
         {
-            IPgvaDriver pgva = new PgvaDriver("tcp/ip");
+            IPgvaDriver pgva = new PgvaDriver("tcp/ip", "COM3", 8502, "192.168.0.199", 115200, 16);
             pgva.Calibration();
             pgva.Aspirate(100, -40);
             pgva.Dispense(100, 40);

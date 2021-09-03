@@ -96,7 +96,7 @@ interface IPgvaDriver {
         private int baudrate;
         private int slaveID;
 
-        // DEFAULT: TCP/IP
+        // DEFAULT INTERFACE: TCP/IP
         public PgvaDriver(string intrface, string comPort, int tcpPort, string host, int baudrate, int slaveID)
         {
             this.intrface = intrface;
@@ -132,7 +132,7 @@ interface IPgvaDriver {
                 Console.WriteLine("Could not connect to PGVA: " + e + ", attempt {" + (1) + "}");
             }
 
-            SetPumpPressure();
+            SetPumpPressure(550, -550);
             Console.WriteLine("PGVA Initialized");
         }
 

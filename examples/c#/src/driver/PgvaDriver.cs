@@ -10,7 +10,7 @@ using System.Net;
 using System.Threading;
 using EasyModbus;
 
-namespace PvgaCSharpDriver
+namespace driver
 {
     enum InputRegisters
     {
@@ -132,7 +132,6 @@ interface IPgvaDriver {
                 Console.WriteLine("Could not connect to PGVA: " + e + ", attempt {" + (1) + "}");
             }
 
-            SetPumpPressure(550, -550);
             Console.WriteLine("PGVA Initialized");
         }
 
@@ -204,7 +203,7 @@ interface IPgvaDriver {
             }
             else
             {
-                throw new ArgumentException("Pressure is outside of the range -450 to 0 mBar");
+                throw new ArgumentException("Pressure is outside of the range 0 to 450 mBar");
             }
             Thread.Sleep(500);
             if (actuationTime >= 0 && actuationTime <= 1000)
@@ -216,25 +215,6 @@ interface IPgvaDriver {
                 throw new ArgumentException("Actuation time is outside of the range 0 to 1000 ms");
             }
             Thread.Sleep(actuationTime);
-        }
-
-        //for testing
-        public void Mix()
-        {
-            int actuationTime = 150;
-            WriteData((int)HoldingRegisters.OutputPressuremBar, -80);
-            Thread.Sleep(500);
-            WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
-            Thread.Sleep(actuationTime);
-
-            Thread.Sleep(2000);
-
-            actuationTime = 100;
-            WriteData((int)HoldingRegisters.OutputPressuremBar, 35);
-            Thread.Sleep(500);
-            WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
-            Thread.Sleep(actuationTime);
-            Console.WriteLine("Mix");
         }
 
         public void Calibration()
@@ -275,17 +255,6 @@ interface IPgvaDriver {
             data[1] = ReadData((int)InputRegisters.PressureActualmBar);
             data[2] = ReadData((int)InputRegisters.OutputPressureActualmBar);
             return data;
-        }
-    }
-
-    class Example
-    {
-        static void Main(string[] args)
-        {
-            IPgvaDriver pgva = new PgvaDriver("tcp/ip", "COM3", 8502, "192.168.0.199", 115200, 16);
-            pgva.Calibration();
-            pgva.Aspirate(100, -40);
-            pgva.Dispense(100, 40);
         }
     }
 }

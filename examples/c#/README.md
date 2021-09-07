@@ -36,4 +36,4 @@ pgva.Dispense(100, 40);
 ## Author
 |Name          | Email                     | GitHub         |
 | ------------ | ------------------------- | -------------- |
-| Jared Raines | raines.j@northeastern.edu | "@rainesjared" |
+| Jared Raines | raines.j@northeastern.edu | @rainesjared   |

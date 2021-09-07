@@ -1,6 +1,5 @@
 # C#/.NET Driver
-
-![image](https://miro.medium.com/max/2000/1*MfOHvI5b1XZKYTXIAKY7PQ.png)
+<img src="https://miro.medium.com/max/2000/1*MfOHvI5b1XZKYTXIAKY7PQ.png" alt="alt text" width="500" height="200">
 
 ## Required Libraries
 

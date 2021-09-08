@@ -89,6 +89,8 @@ interface IPgvaDriver {
     class PgvaDriver : IPgvaDriver
     {
         private ModbusClient modbusClient;
+        private IModbusSerialMaster master;
+        private SerialPort port;
         private string intrface;
         private string comPort;
         private int tcpPort;
@@ -109,23 +111,28 @@ interface IPgvaDriver {
             Console.WriteLine("Start");
             System.Net.ServicePointManager.SecurityProtocol = 
                 SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            try 
+            {
+                if (intrface.Equals("serial"))
+                {
+                    port = new SerialPort(comPort);
+                    port.BaudRate = baudrate;
+                    port.DataBits = 8;
+                    port.Parity = Parity.None;
+                    port.StopBits = StopBits.One;
 
-            //serial communication in development
-            if (intrface.Equals("serial"))
-            {
-                modbusClient = new ModbusClient(comPort);
-            }
-            else
-            {
-                modbusClient = new ModbusClient(host, tcpPort);
-            }
-            modbusClient.Baudrate = baudrate;
-            modbusClient.ConnectionTimeout = 2000;
-            modbusClient.UnitIdentifier = slaveID;
-            
-            try
-            {
-                modbusClient.Connect();
+                    port.Open();
+                    var adapter = new SerialPortAdapter(port);
+                    master = ModbusSerialMaster.CreateAscii(adapter);
+                }
+                else
+                {
+                    modbusClient = new ModbusClient(host, tcpPort);
+                    modbusClient.ConnectionTimeout = 2000;
+                    modbusClient.UnitIdentifier = slaveID;
+
+                    modbusClient.Connect();
+                }
             }
             catch (Exception e)
             {
@@ -137,34 +144,54 @@ interface IPgvaDriver {
 
         public int ReadData(int register)
         {
-            int[] data = new int[1];
-
             try
             {
-                data = modbusClient.ReadInputRegisters(register, 0x01);
+                if (intrface.Equals("serial"))
+                {
+                    ushort[] data = new ushort[1];
+                    data = (master.ReadInputRegisters(slaveID, (ushort) register, 1));
+                    return (data[0] - ((data[0] > 32767) ? 65536 : 0));
+                }
+                else
+                {
+                    int[] data = new int[1];
+                    data = modbusClient.ReadInputRegisters(register, 0x01);
+                    return data[0];
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine("Read Error: " + e);
+                return -1;
             }
-
-            return data[0];
         }
 
         public void WriteData(int register, int val)
         {
+            if (val < 0)
+            {
+                val += (int) Math.Pow(2, 16);
+            }
+            
             try
             {
-                if (val < 0)
+                if (intrface.Equals("serial"))
                 {
-                    val += (int) Math.Pow(2, 16);
+                    master.WriteSingleRegister(slaveID, (ushort)register, (ushort)val);
+                    ushort[] status = master.ReadInputRegisters(slaveID, (int)InputRegisters.StatusWord, 1);
+                    while ((status[0] & 1) == 1)
+                    {
+                        status = master.ReadInputRegisters(slaveID, (int)InputRegisters.StatusWord, 1);
+                    }
                 }
-                
-                modbusClient.WriteSingleRegister(register, val);
-                int[] status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
-                while ((status[0] & 1) == 1)
+                else
                 {
-                    status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    modbusClient.WriteSingleRegister(register, val);
+                    int[] status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    while ((status[0] & 1) == 1)
+                    {
+                        status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    }
                 }
             }
             catch (Exception e)
@@ -177,7 +204,7 @@ interface IPgvaDriver {
         {
             if (pressure >= -450 && pressure <= 0)
             {
-                modbusClient.WriteSingleRegister((int)HoldingRegisters.OutputPressuremBar, pressure);
+                WriteData((int)HoldingRegisters.OutputPressuremBar, pressure);
             }
             else
             {
@@ -186,7 +213,7 @@ interface IPgvaDriver {
             Thread.Sleep(500);
             if (actuationTime >= 0 && actuationTime <= 1000)
             {
-                modbusClient.WriteSingleRegister((int)HoldingRegisters.ValveActuationTime, actuationTime);
+                WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
             }
             else
             {
@@ -199,7 +226,7 @@ interface IPgvaDriver {
         {
             if (pressure >= 0 && pressure <= 450)
             {
-                modbusClient.WriteSingleRegister((int)HoldingRegisters.OutputPressuremBar, pressure);
+                WriteData((int)HoldingRegisters.OutputPressuremBar, pressure);
             }
             else
             {
@@ -208,7 +235,7 @@ interface IPgvaDriver {
             Thread.Sleep(500);
             if (actuationTime >= 0 && actuationTime <= 1000)
             {
-                modbusClient.WriteSingleRegister((int)HoldingRegisters.ValveActuationTime, actuationTime);
+                WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
             }
             else
             {

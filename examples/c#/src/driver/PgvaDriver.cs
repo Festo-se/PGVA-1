@@ -9,6 +9,9 @@ using System;
 using System.Net;
 using System.Threading;
 using EasyModbus;
+using System.IO.Ports;
+using Modbus.Device;
+using Modbus.Serial;
 
 namespace driver
 {

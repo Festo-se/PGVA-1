@@ -16,13 +16,21 @@
 * **int baudrate** - baud rate speed for serial communication (ex. 115200)
 * **int slaveID** - unit or slave Modbus identification number for the device (ex. 1)
 
-## Examples
+## Example Code
+### Basic TCP/IP example with port number and host IP passsed in
+* Creates a new PGVA driver object (interface, tcpPort, host)
+```python
+pgva = PGVA("tcp/ip", tcpPort=8502, host="192.168.0.118")
+```
+* Aspirate at -40 mBar (vacuum) for 100 ms
+```python
+pgva.aspirate(100, -40)
+```
+* Dispense at 40 mBar (pressure) for 100 ms
+```python
+pgva.dispense(100, 40)
+```
 
-* simple usage of PGVA driver
-
-## Driver
-
-> Driver is constructed to support both modbus ascii and modbus tcp/ip
 
 ## Author
 |Name          | Email                     | GitHub         |

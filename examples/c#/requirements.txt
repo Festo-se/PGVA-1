@@ -1,2 +1,0 @@
-# Pgva C# required packages
-EasyModbusTCP 5.6.0

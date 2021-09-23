@@ -1,9 +1,19 @@
+/* Author:     Raines, Jared
+ * Copyright:  Copyright 2021, Festo Life Tech
+ * Version:    0.0.1
+ * Maintainer: Raines, Jared
+ * Email:      jared.raines@festo.com
+ * Status:     Development
+ */
 using System;
 using System.Net;
 using System.Threading;
 using EasyModbus;
+using System.IO.Ports;
+using Modbus.Device;
+using Modbus.Serial;
 
-namespace PvgaCSharpDriver_2._0
+namespace driver
 {
     enum InputRegisters
     {
@@ -72,77 +82,119 @@ namespace PvgaCSharpDriver_2._0
     }
         
 interface IPgvaDriver {
-    void Aspirate(int mL);
-    void Dispense(int mL);
-    void Mix();
+    void Aspirate(int actuationTime, int pressure);
+    void Dispense(int actuationTime, int pressure);
+    void Calibration();
+    void SetPumpPressure(int pressure, int vacuum);
+    int[] ReadSensorData();
 }
 
     class PgvaDriver : IPgvaDriver
     {
         private ModbusClient modbusClient;
+        private IModbusSerialMaster master;
+        private SerialPort port;
+        private string intrface;
+        private string comPort;
+        private int tcpPort;
+        private string host;
+        private int baudrate;
+        private int slaveID;
 
-        // DEFAULT: TCP/IP
-        public PgvaDriver(String config)
+        // DEFAULT INTERFACE: TCP/IP
+        public PgvaDriver(string intrface, string comPort, int tcpPort, string host, int baudrate, int slaveID)
         {
+            this.intrface = intrface;
+            this.comPort = comPort;
+            this.tcpPort = tcpPort;
+            this.host = host;
+            this.baudrate = baudrate;
+            this.slaveID = slaveID;
+
             Console.WriteLine("Start");
-            // ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             System.Net.ServicePointManager.SecurityProtocol = 
                 SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            if (config.Equals("serial"))
+            try 
             {
-                modbusClient = new ModbusClient("Com3");
-            }
-            else
-            {
-                modbusClient = new ModbusClient("192.168.0.199", 8502);
-            }
-            modbusClient.Baudrate = 115200;
-            modbusClient.ConnectionTimeout = 2000;
-            modbusClient.UnitIdentifier = 16;
-            
-            try
-            {
-                modbusClient.Connect();
+                if (intrface.Equals("serial"))
+                {
+                    port = new SerialPort(comPort);
+                    port.BaudRate = baudrate;
+                    port.DataBits = 8;
+                    port.Parity = Parity.None;
+                    port.StopBits = StopBits.One;
+
+                    port.Open();
+                    var adapter = new SerialPortAdapter(port);
+                    master = ModbusSerialMaster.CreateAscii(adapter);
+                }
+                else
+                {
+                    modbusClient = new ModbusClient(host, tcpPort);
+                    modbusClient.ConnectionTimeout = 2000;
+                    modbusClient.UnitIdentifier = slaveID;
+
+                    modbusClient.Connect();
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine("Could not connect to PGVA: " + e + ", attempt {" + (1) + "}");
             }
 
-            SetPumpPressure();
             Console.WriteLine("PGVA Initialized");
         }
 
         public int ReadData(int register)
         {
-            int[] data = new int[1];
-
             try
             {
-                data = modbusClient.ReadInputRegisters(register, 0x01);
+                if (intrface.Equals("serial"))
+                {
+                    ushort[] data = new ushort[1];
+                    data = (master.ReadInputRegisters(slaveID, (ushort) register, 1));
+                    return (data[0] - ((data[0] > 32767) ? 65536 : 0));
+                }
+                else
+                {
+                    int[] data = new int[1];
+                    data = modbusClient.ReadInputRegisters(register, 0x01);
+                    return data[0];
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine("Read Error: " + e);
+                return -1;
             }
-
-            return data[0];
         }
 
         public void WriteData(int register, int val)
         {
+            if (val < 0)
+            {
+                val += (int) Math.Pow(2, 16);
+            }
+            
             try
             {
-                if (val < 0)
+                if (intrface.Equals("serial"))
                 {
-                    val += (int) Math.Pow(2, 16);
+                    master.WriteSingleRegister(slaveID, (ushort)register, (ushort)val);
+                    ushort[] status = master.ReadInputRegisters(slaveID, (int)InputRegisters.StatusWord, 1);
+                    while ((status[0] & 1) == 1)
+                    {
+                        status = master.ReadInputRegisters(slaveID, (int)InputRegisters.StatusWord, 1);
+                    }
                 }
-                
-                modbusClient.WriteSingleRegister(register, val);
-                int[] status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
-                while ((status[0] & 1) == 1)
+                else
                 {
-                    status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    modbusClient.WriteSingleRegister(register, val);
+                    int[] status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    while ((status[0] & 1) == 1)
+                    {
+                        status = modbusClient.ReadInputRegisters((int)InputRegisters.StatusWord, 1);
+                    }
                 }
             }
             catch (Exception e)
@@ -151,40 +203,48 @@ interface IPgvaDriver {
             }
         }
 
-        public void Aspirate(int mL)
+        public void Aspirate(int actuationTime, int pressure)
         {
-            int actuationTime = 200;
-            modbusClient.WriteSingleRegister((int)HoldingRegisters.OutputPressuremBar, -80);
+            if (pressure >= -450 && pressure <= 0)
+            {
+                WriteData((int)HoldingRegisters.OutputPressuremBar, pressure);
+            }
+            else
+            {
+                throw new ArgumentException("Pressure is outside of the range -450 to 0 mBar");
+            }
             Thread.Sleep(500);
-            modbusClient.WriteSingleRegister((int)HoldingRegisters.ValveActuationTime, 150);
+            if (actuationTime >= 0 && actuationTime <= 1000)
+            {
+                WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
+            }
+            else
+            {
+                throw new ArgumentException("Actuation time is outside of the range 0 to 1000 ms");
+            }
             Thread.Sleep(actuationTime);
         }
 
-        public void Dispense(int mL)
+        public void Dispense(int actuationTime, int pressure)
         {
-            int actuationtime = 280;
-            modbusClient.WriteSingleRegister((int)HoldingRegisters.OutputPressuremBar, 50);
+            if (pressure >= 0 && pressure <= 450)
+            {
+                WriteData((int)HoldingRegisters.OutputPressuremBar, pressure);
+            }
+            else
+            {
+                throw new ArgumentException("Pressure is outside of the range 0 to 450 mBar");
+            }
             Thread.Sleep(500);
-            modbusClient.WriteSingleRegister((int)HoldingRegisters.ValveActuationTime, 280);
-            Thread.Sleep(actuationtime);
-        }
-
-        public void Mix()
-        {
-            int actuationTime = 150;
-            WriteData((int)HoldingRegisters.OutputPressuremBar, -80);
-            Thread.Sleep(500);
-            WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
+            if (actuationTime >= 0 && actuationTime <= 1000)
+            {
+                WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
+            }
+            else
+            {
+                throw new ArgumentException("Actuation time is outside of the range 0 to 1000 ms");
+            }
             Thread.Sleep(actuationTime);
-
-            Thread.Sleep(2000);
-
-            actuationTime = 100;
-            WriteData((int)HoldingRegisters.OutputPressuremBar, 35);
-            Thread.Sleep(500);
-            WriteData((int)HoldingRegisters.ValveActuationTime, actuationTime);
-            Thread.Sleep(actuationTime);
-            Console.WriteLine("Mix");
         }
 
         public void Calibration()
@@ -205,10 +265,17 @@ interface IPgvaDriver {
             WriteData((int)HoldingRegisters.MinCalibrSetP, -450);
         }
 
-        public void SetPumpPressure()
+        public void SetPumpPressure(int pressure, int vacuum)
         {
-            WriteData((int)HoldingRegisters.PressureThresholdmBar, 550);
-            WriteData((int)HoldingRegisters.VacuumThresholdmBar, -550);
+            if (pressure >= 0 && pressure <= 550) 
+            {
+                WriteData((int)HoldingRegisters.PressureThresholdmBar, pressure);
+            }
+            
+            if (vaccum >= -550 && vacuum <= 0) 
+            {
+                WriteData((int)HoldingRegisters.VacuumThresholdmBar, vaccum);
+            }
         }
 
         public int[] ReadSensorData()
@@ -218,26 +285,6 @@ interface IPgvaDriver {
             data[1] = ReadData((int)InputRegisters.PressureActualmBar);
             data[2] = ReadData((int)InputRegisters.OutputPressureActualmBar);
             return data;
-        }
-
-    }
-
-    class Example
-    {
-        static void Main(string[] args)
-        {
-            IPgvaDriver pg = new PgvaDriver("serial");
-
-            while (true)
-            {
-                Console.WriteLine("Aspirate");
-                pg.Aspirate(10);
-                Thread.Sleep(3000);
-            
-                Console.WriteLine("Dispense");
-                pg.Dispense(10);
-                Thread.Sleep(3000);
-            }
         }
     }
 }

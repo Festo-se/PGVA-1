@@ -76,7 +76,7 @@ class PGVA:
         self.sensorData = {'vaccumChamber' : 0, 'pressureChamber': 0, 'outputPressure': 0}
         self.pgvaConfig = {
             "interface": interface,
-            "comPOrt" : comPort,
+            "comPort" : comPort,
             "tcpPort": tcpPort,
             "ip" : host,
             "baudrate" : baudrate,

@@ -272,9 +272,9 @@ interface IPgvaDriver {
                 WriteData((int)HoldingRegisters.PressureThresholdmBar, pressure);
             }
             
-            if (vaccum >= -550 && vacuum <= 0) 
+            if (vacuum >= -550 && vacuum <= 0) 
             {
-                WriteData((int)HoldingRegisters.VacuumThresholdmBar, vaccum);
+                WriteData((int)HoldingRegisters.VacuumThresholdmBar, vacuum);
             }
         }
 

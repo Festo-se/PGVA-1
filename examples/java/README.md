@@ -5,8 +5,10 @@
 * Java 11.0.10
 
 ## Required Libraries
-* <img src="https://avatars.githubusercontent.com/u/2309355?s=88&v=4" alt="alt text" width="30" height="30">[ modbus4j v2.0.7](https://github.com/MangoAutomation/modbus4j)
+* <img src="https://avatars.githubusercontent.com/u/2309355?s=88&v=4" alt="alt text" width="30" height="30">[ modbus4j Custom jar](https://github.com/MangoAutomation/modbus4j)
 * <img src="http://rxtx.qbang.org/wiki/skins/common/images/wikii.png" alt="alt text" width="60" height="30">[ RXTXcomm v2.1.7](http://rxtx.qbang.org/wiki/index.php/Main_Page)
+* commons-lang3-3.12.0.jar
+* commons-logging-1.2.jar
 
 ## DrvPGVA Arguments
 * **int slaveID** - unit or slave Modbus identification number for the device (ex. 1)

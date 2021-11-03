@@ -1,4 +1,4 @@
-public class PVGARegisters {
+public class PGVARegisters {
 	//input registers
     public int VACUUM = 256;
     public int PRESSURE_ACTUAL = 257;

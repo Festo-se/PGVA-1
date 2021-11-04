@@ -97,13 +97,25 @@ class PGVA:
         data = 0
         try:
             data = self.client.read_input_registers(register, 1, unit=self.pgvaConfig['modbusSlave'])
-            return data.registers[0]
         except Exception as e:
             print("Error while reading : ", str(e))
+
+        result = data.registers[0]
+
+        if (sign):
+            if (result & 0x8000):
+                result = -(~result & 0xFFFF) - 1
+
+        return result
+
 
 
     def writeData(self, register, val, sign=True):
         status = object
+
+        if (sign):
+            val &= 0xFFFF
+
         print(f"{register}, {val}")
         try:
             if val < 0:

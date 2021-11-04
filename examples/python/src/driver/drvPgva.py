@@ -169,7 +169,7 @@ class PGVA:
             self.writeData(_ModbusCommands.OutputPressuremBar, pressure)
         else:
             raise ValueError("Pressure Data not in range")
-        time.sleep(0.5)
+        self._waitUntilPressureRegulated(pressure)
         #set actuation time
         if actuationTime in range(0, 1000):
             self.writeData(_ModbusCommands.ValveActuationTime, actuationTime, sign=False)
@@ -183,7 +183,7 @@ class PGVA:
             self.writeData(_ModbusCommands.OutputPressuremBar, pressure)
         else:
             raise ValueError("Pressure Data not in range")
-        time.sleep(0.5)
+        self._waitUntilPressureRegulated(pressure)
         #set actuation time
         if actuationTime in range(0, 1000):
             self.writeData(_ModbusCommands.ValveActuationTime, actuationTime, sign=False)
@@ -197,7 +197,42 @@ class PGVA:
         self.sensorData['pressureChamber'] = self.readData(_ModbusCommands.PressureActualmBar, True)
         self.sensorData['outputPressure'] = self.readData(_ModbusCommands.OutputPressureActualmBar, True)
     
-        return self.sensorData       
+        return self.sensorData   
+
+    def _waitUntilPressureRegulated(self, desiredPressure:int):
+        STABLE_PRESSURE_THRESHOLD = 3
+        TIMEOUT = 100 # 100 * 50 ms = 5000 ms
+
+        timesPressureReached = 0
+        timeoutCounter = 0
+
+        # If the desired pressure less than +-50 mbar we will wait until the
+        # pressure is +- 10%. Otherwise, wait until the pressure is within +- 5%
+        if (abs(desiredPressure) <= 50):
+            margin = 0.1
+        else:
+            margin = 0.05
+
+        maxAllowedDeviation = abs(int(desiredPressure * margin))
+        
+    
+        while True:
+            actualPressure = self.readData(_ModbusCommands.OutputPressureActualmBar, True)
+            if (abs(desiredPressure - actualPressure) < maxAllowedDeviation):
+                timesPressureReached += 1
+            else:
+                timesPressureReached = 0
+            
+            if (timesPressureReached == STABLE_PRESSURE_THRESHOLD):
+                break
+            
+            if (timeoutCounter > TIMEOUT):
+                return False
+
+            timeoutCounter += 1
+
+        return True
+    
 
 
 

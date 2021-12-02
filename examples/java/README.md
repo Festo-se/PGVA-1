@@ -29,15 +29,6 @@ DrvPGVA pgva = new DrvPGVA(16);
 pgva.connectTCP_IP("192.168.0.199", 8502);
 ```
 
-* Sets the vacuum pump to -550 mBar and the pressure pump to 550 mBar
-* Prints the pressuer chamber and vacuum chamber values to the screen
-```java
-pgva.calibrate();
-
-System.out.println(pgva.getPressureChamberActual());
-System.out.println(pgva.getVacuumChamberActual());
-```
-
 * Aspirate @ -40 mBar for 100 ms
 * Dispense @ 40 mBar for 100 ms
 * Close the connection

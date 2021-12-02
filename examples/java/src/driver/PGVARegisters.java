@@ -1,5 +1,7 @@
+package driver;
+
 public class PGVARegisters {
-	//input registers
+    //input registers
     public int VACUUM = 256;
     public int PRESSURE_ACTUAL = 257;
     public int OUTPUT_PRESSURE_ACTUAL = 258;
@@ -22,7 +24,7 @@ public class PGVARegisters {
     public int LAST_MODBUS_ERR = 275;
     public int SEED = 276;
     public int MAN_MODE = 277;
-    
+
     //holding registers
     public int VALVE_ACTUATION_TIME = 4096;
     public int VACUUM_THRESHOLD = 4097;
@@ -45,7 +47,7 @@ public class PGVARegisters {
     public int AUTH_START = 4296;
     public int KEY_WRITE = 4297;
     public int CONFIG_ONGOING = 4298;
-    
+
     //multiple holding registers
     public int IP_ADDRESS_H = 12288;
     public int IP_ADDRESS_L = 12289;

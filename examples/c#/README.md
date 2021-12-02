@@ -36,13 +36,6 @@ driver.IPgvaDriver pgva =
 new PgvaDriver("tcp/ip", "COM3", 8502, "192.168.0.199", 115200, 16);
 ```
 
-* Sets the vacuum pump to -550 mBar and the pressure pump to 550 mBar
-* Adjusts the max, min, and zero calibration set points
-```csharp
-pgva.SetPumpPressure(550, -550);
-pgva.Calibration();
-```
-
 * Aspirate @ -40 mBar for 100 ms
 * Dispense @ 40 mBar for 100 ms
 ```csharp

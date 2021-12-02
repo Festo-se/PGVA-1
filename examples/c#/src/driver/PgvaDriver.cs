@@ -1,6 +1,6 @@
-/* Author:     Raines, Jared
+﻿/* Author:     Raines, Jared
  * Copyright:  Copyright 2021, Festo Life Tech
- * Version:    0.0.1
+ * Version:    1.0.0
  * Maintainer: Raines, Jared
  * Email:      jared.raines@festo.com
  * Status:     Development
@@ -13,8 +13,9 @@ using System.IO.Ports;
 using Modbus.Device;
 using Modbus.Serial;
 
-namespace driver
+namespace PgvaDriver.driver
 {
+    // Modbus Addresses
     enum InputRegisters
     {
         VacuumActual = 256,
@@ -80,16 +81,20 @@ namespace driver
         ProductionYear=12297,
         ProductionDate=12298
     }
-        
-interface IPgvaDriver {
-    void Aspirate(int actuationTime, int pressure);
-    void Dispense(int actuationTime, int pressure);
-    void Calibration();
-    void SetPumpPressure(int pressure, int vacuum);
-    int[] ReadSensorData();
-}
+    
+    // PGVA interface
+    public interface IPgvaDriver
+    {
+        void Aspirate(int actuationTime, int pressure);
+        void Dispense(int actuationTime, int pressure);
+        int[] ReadSensorData();
+        void SetOutputPressure(int pressure);
+        void ActuateValve(int actuationTime);
+        void Disconnect();
+    }
 
-    class PgvaDriver : IPgvaDriver
+    // PGVA Driver
+    public class PgvaDriver : IPgvaDriver
     {
         private ModbusClient modbusClient;
         private IModbusSerialMaster master;
@@ -99,9 +104,9 @@ interface IPgvaDriver {
         private int tcpPort;
         private string host;
         private int baudrate;
-        private int slaveID;
+        private byte slaveID;
 
-        // DEFAULT INTERFACE: TCP/IP
+        // Constructor
         public PgvaDriver(string intrface, string comPort, int tcpPort, string host, int baudrate, int slaveID)
         {
             this.intrface = intrface;
@@ -109,7 +114,7 @@ interface IPgvaDriver {
             this.tcpPort = tcpPort;
             this.host = host;
             this.baudrate = baudrate;
-            this.slaveID = slaveID;
+            this.slaveID = (byte)slaveID;
 
             Console.WriteLine("Start");
             System.Net.ServicePointManager.SecurityProtocol = 
@@ -132,7 +137,7 @@ interface IPgvaDriver {
                 {
                     modbusClient = new ModbusClient(host, tcpPort);
                     modbusClient.ConnectionTimeout = 2000;
-                    modbusClient.UnitIdentifier = slaveID;
+                    modbusClient.UnitIdentifier = this.slaveID;
 
                     modbusClient.Connect();
                 }
@@ -145,6 +150,20 @@ interface IPgvaDriver {
             Console.WriteLine("PGVA Initialized");
         }
 
+        // disconnect from the PGVA
+        public void Disconnect()
+        {
+            if (intrface == "serial")
+            {
+                port.Close();
+            }
+            else
+            {
+                modbusClient.Disconnect();
+            }
+        }
+
+        // read a frame over modbus
         public int ReadData(int register)
         {
             try
@@ -169,6 +188,7 @@ interface IPgvaDriver {
             }
         }
 
+        // write a frame over modbus
         public void WriteData(int register, int val)
         {
             if (val < 0)
@@ -203,6 +223,7 @@ interface IPgvaDriver {
             }
         }
 
+        // aspirate at the given vacuum for the given amount of time
         public void Aspirate(int actuationTime, int pressure)
         {
             if (pressure >= -450 && pressure <= 0)
@@ -225,6 +246,7 @@ interface IPgvaDriver {
             Thread.Sleep(actuationTime);
         }
 
+        // dispense at the given pressure for the given amount of time
         public void Dispense(int actuationTime, int pressure)
         {
             if (pressure >= 0 && pressure <= 450)
@@ -247,37 +269,7 @@ interface IPgvaDriver {
             Thread.Sleep(actuationTime);
         }
 
-        public void Calibration()
-        {
-            // start calibration
-            WriteData((int)HoldingRegisters.StartPreCalibration, 1);
-            // set max pressure
-            WriteData((int)HoldingRegisters.AdjustCalibrSetPoints, 2);
-            // enter actual max
-            WriteData((int)HoldingRegisters.MaxCalibrSetP, 450);
-            // set zero pressure
-            WriteData((int)HoldingRegisters.AdjustCalibrSetPoints, 1);
-            // enter actual 0
-            WriteData((int)HoldingRegisters.ZeroCalibrSetP, 0);
-            // set min pressure
-            WriteData((int)HoldingRegisters.AdjustCalibrSetPoints, 0);
-            // enter actual min
-            WriteData((int)HoldingRegisters.MinCalibrSetP, -450);
-        }
-
-        public void SetPumpPressure(int pressure, int vacuum)
-        {
-            if (pressure >= 0 && pressure <= 550) 
-            {
-                WriteData((int)HoldingRegisters.PressureThresholdmBar, pressure);
-            }
-            
-            if (vacuum >= -550 && vacuum <= 0) 
-            {
-                WriteData((int)HoldingRegisters.VacuumThresholdmBar, vacuum);
-            }
-        }
-
+        // read the vacuum chamber, pressure chamber, and output pressure values from the device
         public int[] ReadSensorData()
         {
             int[] data = new int[3];
@@ -285,6 +277,34 @@ interface IPgvaDriver {
             data[1] = ReadData((int)InputRegisters.PressureActualmBar);
             data[2] = ReadData((int)InputRegisters.OutputPressureActualmBar);
             return data;
+        }
+
+        // set the output pressure in mBar
+        public void SetOutputPressure(int pressure)
+        {
+            if (pressure >= -450 && pressure <= 450)
+            {
+                WriteData((int) HoldingRegisters.OutputPressuremBar, pressure);
+                Thread.Sleep(500);
+            }
+            else
+            {
+                throw new ArgumentException("Pressure value not in range");
+            }
+        }
+
+        // set the actuation time in milliseconds
+        public void ActuateValve(int actuationTime)
+        {
+            if (actuationTime >= 0 && actuationTime <= 1000)
+            {
+                WriteData((int) HoldingRegisters.ValveActuationTime, actuationTime);
+                Thread.Sleep(actuationTime / 1000);
+            }
+            else
+            {
+                throw new ArgumentException("Actuation time not in range");
+            }
         }
     }
 }

@@ -17,7 +17,7 @@
 * This is an open software project which provides PGVA-1 customers and users with a wide array of driver templates in different coding languages to allow for quick and easy adaptability of the Festo pressure and vacuum generator to any system, project, or environment. Listed below are the current languages provided along with the methods that each driver provides to the user.
 
 ## Links
-* [:shopping_cart::Product Page](https://www.festo.com/us/en/e/solutions/industries/life-science/laboratory-automation/in-vitro-diagnostics-id_334908/)
+* [:shopping_cart::Product Page](https://www.festo.com/gb/en/a/8146318/?q=8146318~:festoSortOrderScored&siteUid=fox_gb&siteName=Festo+GB)
 * [:receipt::User Manual](https://www.festo.com/net/SupportPortal/Files/709629/V5_PVGA%20Manual.pdf)
 * [:old_key::Support Portal](https://www.festo.com/net/en-gb_gb/SupportPortal/Default.aspx?tab=30&q=8146318)
 * [:desktop_computer::GUI](https://www.festo.com/net/en-gb_gb/SupportPortal/Default.aspx?q=8146318&tab=4&s=t#result)
@@ -51,15 +51,15 @@
 
 ### *:radioactive: Advanced Methods*
 
-* **:wrench: Calibration** -
-  * Purpose:      Sets the maximum, minimum, and zero pressure set points
-  * Value Ranges: NONE
-  * Arguments:    void
+* **:dash: SetOutputPressure** -
+  * Purpose:      Sets the output pressure in mBar
+  * Value Ranges: 450 to -450 mBar
+  * Arguments:    int pressure (mBar)
   * Returns:      void
-* **:dash: SetPumpPressure** -
-  * Purpose:      Sets pressure and vaccum threshold values in mBar
-  * Value Ranges: pressure = 0 to 550 mBar, vacuum = -550 to 0 mBar
-  * Arguments:    int pressure (mBar), int vacuum (ms)
+* **:wrench: ActuateValve** -
+  * Purpose:      Sets the actuation time of the PGVA valve
+  * Value Ranges: 0 to 1000 ms
+  * Arguments:    int actuationTime (ms)
   * Returns:      void
 
 ## Contributors

@@ -110,8 +110,8 @@ public class Tests {
     @org.junit.Test
     public void TestReadSensorData() throws InterruptedException, ErrorResponseException, ModbusTransportException, ModbusInitException {
         InitSerial();
-        assertEquals(-500, pgva.readSensorData()[0], 75);
-        assertEquals(500, pgva.readSensorData()[1], 75);
+        assertEquals(-500, pgva.readSensorData()[1], 75);
+        assertEquals(500, pgva.readSensorData()[0], 75);
         pgva.dispense(100, 100);
         assertEquals(100, pgva.readSensorData()[2], 10);
         pgva.aspirate(100, -100);

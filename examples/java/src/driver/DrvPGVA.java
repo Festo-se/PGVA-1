@@ -111,7 +111,7 @@ public class DrvPGVA {
     // aspirate at the given vacuum for the given amount of time
     public void aspirate(int actuationTime, int pressure) throws InterruptedException, ModbusTransportException, ErrorResponseException {
         if (pressure < -450 || pressure > 0) {
-            throw new RuntimeException("The given pressure is outside the valid range [-450, 0]mbar");
+            throw new IllegalArgumentException("The given pressure is outside the valid range [-450, 0]mbar");
         }
         setTimedOutputPressure(actuationTime, pressure);
     }
@@ -119,7 +119,7 @@ public class DrvPGVA {
     // dispense at the given pressure for the given amount of time
     public void dispense(int actuationTime, int pressure) throws InterruptedException, ModbusTransportException, ErrorResponseException {
         if (pressure < 0 || pressure > 450) {
-            throw new RuntimeException("The given pressure is outside the valid range [0, 450]mbar");
+            throw new IllegalArgumentException("The given pressure is outside the valid range [0, 450]mbar");
         }
         setTimedOutputPressure(actuationTime, pressure);
     }
@@ -136,7 +136,7 @@ public class DrvPGVA {
             Thread.sleep(500);
         }
         else {
-            throw new RuntimeException("The given pressure is outside the valid range [-450, 450]mbar");
+            throw new IllegalArgumentException("The given pressure is outside the valid range [-450, 450]mbar");
         }
     }
 
@@ -147,16 +147,16 @@ public class DrvPGVA {
             Thread.sleep(500);
         }
         else {
-            throw new RuntimeException("The given actuation time is outside the valid range [0, 1000]msec");
+            throw new IllegalArgumentException("The given actuation time is outside the valid range [0, 1000]msec");
         }
     }
 
     private void setTimedOutputPressure(int actuationTime, int pressure) throws InterruptedException, ModbusTransportException, ErrorResponseException {
         if (pressure < -450 || pressure > 450) {
-            throw new RuntimeException("The given pressure is outside the valid range [-450, 450]mbar");
+            throw new IllegalArgumentException("The given pressure is outside the valid range [-450, 450]mbar");
         }
         if (actuationTime < 0 || actuationTime > 1000) {
-            throw new RuntimeException("The given actuation time is outside the valid range [0, 1000]msec");
+            throw new IllegalArgumentException("The given actuation time is outside the valid range [0, 1000]msec");
         }
 
         this.write(registers.OUTPUT_PRESSURE_mBAR, pressure);

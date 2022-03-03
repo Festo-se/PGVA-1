@@ -139,45 +139,57 @@ class PGVA:
         #enter actual min
         self.writeData(_ModbusCommands.MinCalibrSetP, -450, sign=True)
      
-    
+    def setOutputPressure(self, pressure):
+        #set output pressure
+        if pressure in range(-450, 451):
+            self.writeData(_ModbusCommands.OutputPressuremBar, pressure)
+        else:
+            raise ValueError("Pressure not in range")
+        time.sleep(0.5)
+
+    def openValve(self, actuationTime):
+        #set actuation time
+        if actuationTime in range(0, 1001):
+            self.writeData(_ModbusCommands.ValveActuationTime, actuationTime, sign=False)
+            time.sleep(actuationTime / 1000)
+        else:
+            raise ValueError("Actuation time not in range")
+
     def setPumpPressure(self, pressure, vacuum):
         
         #set pressure chamber treshold
-        if pressure in range(0, 550):
+        if pressure in range(0, 551):
             self.writeData(_ModbusCommands.PressureThresholdmBar, pressure, sign=True)
         #set vacuum chamber treshold
-        if vacuum in range(0, -550):
+        if vacuum in range(0, -549):
             self.writeData(_ModbusCommands.VacuumThresholdmBar, vacuum, sign=True)
-        
 
     def aspirate(self, actuationTime: int, pressure: int):
 
         #set output pressure
         if pressure in range(-450, 0):
-            self.writeData(_ModbusCommands.OutputPressuremBar, pressure)
+            self.setOutputPressure(pressure)
         else:
             raise ValueError("Pressure Data not in range")
-        time.sleep(0.5)
+
         #set actuation time
-        if actuationTime in range(0, 1000):
-            self.writeData(_ModbusCommands.ValveActuationTime, actuationTime, sign=False)
-            time.sleep(actuationTime/1000)
-        else:
-            raise ValueError("Actuation time not in range")
+        self.openValve(actuationTime)
 
     def dispense(self, actuationTime: int, pressure: int):
         #convert from uL to actuation time
-        if pressure in range(0, 450):
-            self.writeData(_ModbusCommands.OutputPressuremBar, pressure)
+        if pressure in range(0, 451):
+            self.setOutputPressure(pressure)
         else:
             raise ValueError("Pressure Data not in range")
-        time.sleep(0.5)
+
         #set actuation time
-        if actuationTime in range(0, 1000):
-            self.writeData(_ModbusCommands.ValveActuationTime, actuationTime, sign=False)
-            time.sleep(actuationTime/1000)
-        else:
-            raise ValueError("Actuation time not in range")
+        self.openValve(actuationTime)
+
+    def mix(self, cycles: int, interval: int, pAsp: int, pDisp: int, timeAsp: int, timeDisp: int):
+        for cycle in range(cycles):
+            self.aspirate(timeAsp, pAsp)
+            self.dispense(timeDisp, pDisp)
+            time.sleep(interval / 1000)
 
     def readSensData(self):
 
@@ -186,6 +198,3 @@ class PGVA:
         self.sensorData['outputPressure'] = self.readData(_ModbusCommands.OutputPressureActualmBar, True)
     
         return self.sensorData       
-
-
-

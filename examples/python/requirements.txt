@@ -1,2 +1,0 @@
-# Pgva required packages
-Pymodbus >= 2.5
